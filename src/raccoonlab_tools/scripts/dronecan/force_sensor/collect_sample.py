@@ -126,10 +126,12 @@ class TestGateOk:
         pd.DataFrame(results).to_csv(f"{save_dir}/{name}.csv", index=False)
 
 
+    # def get_force_measurement_candle():
+        
 
 def main():
     test = TestGateOk()
-    test.get_force_measurement(name="0.00", dir="tests_data/broken_optical_pair_metalic_barrier_with_black_rubber_from_1.1_to_2.0/reverse_0.00")
+    test.get_force_measurement(name="0.00", dir="tests_data/new_barrier/reverse_0.10_1")
 #     cmd = ["pytest", os.path.abspath(__file__)]
 #     cmd += ["--tb=no"]  # No traceback at all
 #     cmd += ["-v"]  # Increase verbosity

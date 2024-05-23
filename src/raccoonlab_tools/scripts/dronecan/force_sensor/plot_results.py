@@ -4,7 +4,6 @@ import pandas as pd
 from collect_results import Sample
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.legend_handler import HandlerLine2D
 import matplotlib.lines as mlines
 
 
