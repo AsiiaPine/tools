@@ -129,36 +129,40 @@ def main():
         start_mes = {}
         end_mes = {}
         for test in tests:
-            test_name = base_test_name + "_" + test.split("/")[-2]
-            # print(test_name)
-            is_reverse = False
-            results = glob.glob(test + "result.csv", recursive=True)
-            samples = pd.read_csv(results[0]).to_dict(orient="records")
-            dist_from_pt = test.split("/")[-2]
+            try:
+                    
+                test_name = base_test_name + "_" + test.split("/")[-2]
+                # print(test_name)
+                is_reverse = False
+                results = glob.glob(test + "result.csv", recursive=True)
+                samples = pd.read_csv(results[0]).to_dict(orient="records")
+                dist_from_pt = test.split("/")[-2]
 
-            samples_list[dist_from_pt] = []
-            start_mes[dist_from_pt] = 0
-            end_mes[dist_from_pt] = 0
-            offset = samples[0]["mean_adc1"]
-            max_sample = 1 / (max(samples, key=lambda x: x["mean_adc1"])["mean_adc1"])
-            print(offset, max_sample)
-            for i, sample in enumerate(samples):
-                sample_ = Sample.from_dict(sample)
-                samples_list[dist_from_pt].append(sample_)
-                if (
-                    i > 0
-                    and (
-                        sample_.mean_adc1 - samples_list[dist_from_pt][i - 1].mean_adc1
-                    )
-                    > sample_.std_adc1
-                    and start_mes[dist_from_pt] == 0
-                ):
-                    start_mes[dist_from_pt] = sample_.y
-                if i < (len(samples) - 1):
+                samples_list[dist_from_pt] = []
+                start_mes[dist_from_pt] = 0
+                end_mes[dist_from_pt] = 0
+                offset = samples[0]["mean_adc1"]
+                max_sample = 1 / (max(samples, key=lambda x: x["mean_adc1"])["mean_adc1"])
+                print(offset, max_sample)
+                for i, sample in enumerate(samples):
+                    sample_ = Sample.from_dict(sample)
+                    samples_list[dist_from_pt].append(sample_)
                     if (
-                        samples[i + 1]["mean_adc1"] - sample_.mean_adc1
-                    ) > sample_.std_adc1:
-                        end_mes[dist_from_pt] = sample_.y
+                        i > 0
+                        and (
+                            sample_.mean_adc1 - samples_list[dist_from_pt][i - 1].mean_adc1
+                        )
+                        > sample_.std_adc1
+                        and start_mes[dist_from_pt] == 0
+                    ):
+                        start_mes[dist_from_pt] = sample_.y
+                    if i < (len(samples) - 1):
+                        if (
+                            samples[i + 1]["mean_adc1"] - sample_.mean_adc1
+                        ) > sample_.std_adc1:
+                            end_mes[dist_from_pt] = sample_.y
+            except:
+                continue
         end_start = {"start": start_mes, "end": end_mes}
         pd.DataFrame(end_start).to_csv(dir + "end_start.csv")
         i = 0
@@ -172,120 +176,126 @@ def main():
         # legend_patches.append(mpatches.Patch(linestyle="-", label="forward"))
 
         for distance, samples in samples_list.items():
-            samples.sort(key=lambda sample: sample.y)
-            dst = distance
-            if "reverse_" in dst:
-                is_reverse = True
-                dst = dst.replace("reverse_", "")
-            if "base" in dst:
+            try:
+                    
+                samples.sort(key=lambda sample: sample.y)
+                dst = distance
+                if "reverse" in dst:
+                    is_reverse = True
+                    dst = dst.replace("reversed_", "")
+                    dst = dst.replace("reverse_", "")
+                    dst=dst.replace("reversed", "")
+                    dst=dst.replace("_", "")
+                if "base" in dst:
+                    continue
+                print(dst)
+                dst = float(dst)
+                print(dst)
+                j = i
+                if dst in distances:
+                    j = distances.index(dst)
+                else:
+                    i += 1
+                    distances.append(dst)
+                    legend_patches.append(mpatches.Patch(color=colors[j], label=dst))
+
+                fig, ax = plot_same_dst_from_pt_plane(
+                    dst,
+                    samples,
+                    plot_raw_voltage=True,
+                    test_name=test_name,
+                    fig=fig,
+                    ax=ax,
+                    to_save=False,
+                    labels=[
+                        f"{'reverse' if is_reverse else ''} mes {dst}",
+                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                    ],
+                    linestyle=f"{'--' if is_reverse else '-'}",
+                    color=colors[j],
+                )
+                fig1, ax1 = plot_same_dst_from_pt_plane(
+                    dst,
+                    samples,
+                    plot_raw_voltage=False,
+                    test_name=test_name,
+                    fig=fig1,
+                    ax=ax1,
+                    to_save=False,
+                    labels=[
+                        f"{'reverse' if is_reverse else ''} mes {dst}",
+                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                    ],
+                    linestyle=f"{'--' if is_reverse else '-'}",
+                    color=colors[j],
+                )
+
+                fig2, ax2 = plot_same_dst_from_pt_plane(
+                    dst,
+                    samples,
+                    plot_raw_voltage=2,
+                    test_name=test_name,
+                    fig=fig2,
+                    ax=ax2,
+                    to_save=False,
+                    labels=[
+                        f"{'reverse' if is_reverse else ''} mes {dst}",
+                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                    ],
+                    linestyle=f"{'--' if is_reverse else '-'}",
+                    color=colors[j],
+                    voltage_multiplier_val=max_sample,
+                    offset=offset,
+                )
+                vlinestyle = f"{'-.' if is_reverse else ':'}"
+                alpha = 0.5
+                print(distance)
+                ax.axvline(
+                    x=start_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                ax.axvline(
+                    x=end_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                ax1.axvline(
+                    x=end_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                ax1.axvline(
+                    x=start_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                print(dst)
+                ax2.axvline(
+                    x=end_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                ax2.axvline(
+                    x=start_mes[distance],
+                    label=distance,
+                    color=colors[j],
+                    linestyle=vlinestyle,
+                    alpha=alpha,
+                )
+                print(dst)
+            except:
                 continue
-            print(dst)
-            dst = float(dst)
-            print(dst)
-            j = i
-            if dst in distances:
-                j = distances.index(dst)
-            else:
-                i += 1
-                distances.append(dst)
-                legend_patches.append(mpatches.Patch(color=colors[j], label=dst))
-
-            fig, ax = plot_same_dst_from_pt_plane(
-                dst,
-                samples,
-                plot_raw_voltage=True,
-                test_name=test_name,
-                fig=fig,
-                ax=ax,
-                to_save=False,
-                labels=[
-                    f"{'reverse' if is_reverse else ''} mes {dst}",
-                    f"{'reverse' if is_reverse else ''} ref {dst}",
-                ],
-                linestyle=f"{'--' if is_reverse else '-'}",
-                color=colors[j],
-            )
-            fig1, ax1 = plot_same_dst_from_pt_plane(
-                dst,
-                samples,
-                plot_raw_voltage=False,
-                test_name=test_name,
-                fig=fig1,
-                ax=ax1,
-                to_save=False,
-                labels=[
-                    f"{'reverse' if is_reverse else ''} mes {dst}",
-                    f"{'reverse' if is_reverse else ''} ref {dst}",
-                ],
-                linestyle=f"{'--' if is_reverse else '-'}",
-                color=colors[j],
-            )
-
-            fig2, ax2 = plot_same_dst_from_pt_plane(
-                dst,
-                samples,
-                plot_raw_voltage=2,
-                test_name=test_name,
-                fig=fig2,
-                ax=ax2,
-                to_save=False,
-                labels=[
-                    f"{'reverse' if is_reverse else ''} mes {dst}",
-                    f"{'reverse' if is_reverse else ''} ref {dst}",
-                ],
-                linestyle=f"{'--' if is_reverse else '-'}",
-                color=colors[j],
-                voltage_multiplier_val=max_sample,
-                offset=offset,
-            )
-            vlinestyle = f"{'-.' if is_reverse else ':'}"
-            alpha = 0.5
-            print(distance)
-            ax.axvline(
-                x=start_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            ax.axvline(
-                x=end_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            ax1.axvline(
-                x=end_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            ax1.axvline(
-                x=start_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            print(dst)
-            ax2.axvline(
-                x=end_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            ax2.axvline(
-                x=start_mes[distance],
-                label=distance,
-                color=colors[j],
-                linestyle=vlinestyle,
-                alpha=alpha,
-            )
-            print(dst)
-
         # try:
         # ax.set_title(f"Dst from PT plane: {dst} mm")
         print("saving", base_test_name)

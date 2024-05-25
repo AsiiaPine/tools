@@ -58,8 +58,8 @@ def main():
     dist_from_pt = 0
     for dir in directories:
         tests = glob.glob(dir + "/*/", recursive=True)
-        if "new_barrier" not in dir:
-            continue
+        # if "new_barrier" not in dir:
+        #     continue
         test_dict = {}
         for test in tests:
             test_name = test.split("/")[-1]
@@ -70,7 +70,10 @@ def main():
                 if ".csv" not in res:
                     continue
                 try:
-                    y = float(res.split("/")[-1].split(".csv")[0])
+                    y = res.split("/")[-1].split(".csv")[0]
+                    y = y.replace("reversed_", "")
+                    y = y.replace("reserve_", "")
+                    y = float(y)
                 except:
                     continue
                 df = pd.read_csv(res)
