@@ -11,6 +11,8 @@ from collect_sample import TestGateOk
 
 
 BAUD_RATE = 115200
+host = "100.76.146.35"
+port = 12345
 
 
 def remove_comment(string):
@@ -23,11 +25,10 @@ def remove_comment(string):
 def remove_eol_chars(string):
     # removed \n or traling spaces
     return string.strip()
-host = "100.76.146.35"
-port = 12345
 def receive_message_and_call_function():
     # Create a socket object
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    i = 8
     try:
         server_socket.bind((host, port))
         server_socket.listen(5)
@@ -37,14 +38,14 @@ def receive_message_and_call_function():
             print(f"Connection from {client_address} has been established.")
             
             try:
-                while True:
+                while i<13:
                     message = client_socket.recv(1024).decode()
                     if not message:
                         break
                     # print(f"Received from {client_address}: {message}")
                     # client_socket.send(f"Server received: {message}".encode())
                     # Receive the message
-                    if "Ready" not in message:
+                    if "Done" not in message:
                         print("Not right msg", message)
                         return
                     line = "G21\nG90\nG94\nG01 F300.00\n"
@@ -52,21 +53,24 @@ def receive_message_and_call_function():
                     
 
                     client_socket.send(command)  # Send g-code
-                    for y in np.linspace(0, 1, 10):
-                        line = f"G00 Y{y}"
-
-                        for z in np.linspace(0, 2.8, 100):
-                            message = client_socket.recv(1024).decode()
-                            if "Ready" not in message:
-                                print("Not right msg", message)
-                            cleaned_line = remove_eol_chars(remove_comment(line))
-                            if cleaned_line:  # checks if string is empty
-                                print("Sending gcode:" + str(cleaned_line))
-                                # converts string to byte encoded string and append newline
-                                command = str.encode(line + "\n")
-                                client_socket.send(command)  # Send g-code
+                    line = f"G00 Y{0}"
+                    cleaned_line = remove_eol_chars(remove_comment(line))
+                    if cleaned_line:  # checks if string is empty
+                        # converts string to byte encoded string and append newline
+                        command = str.encode(line + "\n")
+                        client_socket.send(command)  # Send g-code
                             
-                        
+                    for y in np.linspace(0, 1, 10):
+                        line = f"G00 Y{-y}"
+                        print("Sending gcode:" + str(line))
+
+                        command = str.encode(line + "\n")
+                        client_socket.send(command)  # Send g-code
+                        for z in np.linspace(0, 2.6, 50):
+                            message = client_socket.recv(1024).decode()
+                            if "Done" not in message:
+                                print("Not right msg", message)
+                                
                             line = f"G00 Z{z}"
                             # cleaning up gcode from file
                             cleaned_line = remove_eol_chars(remove_comment(line))
@@ -75,12 +79,12 @@ def receive_message_and_call_function():
                                 # converts string to byte encoded string and append newline
                                 command = str.encode(line + "\n")
                                 client_socket.send(command)  # Send g-code
-                                get_force_measurement(name=f"{z}", dir=f"tests_data/new_sensor_1/{y}")
-                        for z in reversed(np.linspace(0, 2.8, 100)):
+                                get_force_measurement(name=f"{z}", dir=f"tests_data/pla_with_black_cover{i}/{y}")
+                        for z in reversed(np.linspace(0, 2.6, 50)):
                             message = client_socket.recv(1024).decode()
-                            if "Ready" not in message:
+                            if "Done" not in message:
                                 print("Not right msg", message)
-
+                          
                             line = f"G00 Z{z}"
                             # cleaning up gcode from file
                             cleaned_line = remove_eol_chars(remove_comment(line))
@@ -89,8 +93,8 @@ def receive_message_and_call_function():
                                 # converts string to byte encoded string and append newline
                                 command = str.encode(line + "\n")
                                 client_socket.send(command)  # Send g-code
-                                get_force_measurement(name=f"{z}", dir=f"tests_data/new_sensor_1/reversed_{y}")
-
+                                get_force_measurement(name=f"{z}", dir=f"tests_data/pla_with_black_cover{i}/reversed_{y}")
+                    i+=1
             except ConnectionResetError:
                 print(f"Connection lost with {client_address}.")
             finally:
@@ -103,15 +107,16 @@ def receive_message_and_call_function():
     finally:
         server_socket.close()
         print("Server socket closed.")
+        # server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        server_socket.bind((host, port))
-        server_socket.listen(5)
+        # server_socket.bind((host, port))
+        # server_socket.listen(5)
 
         # Listen for incoming connections
         # server_socket.listen(1)
 
         # Accept the incoming connection
-        conn, addr = server_socket.accept()
+        # conn, addr = server_socket.accept()
 
 
 
@@ -127,15 +132,13 @@ def get_force_measurement(n_mes: int = 100, name: str = "", dir=""):
     j = 0
     while i < n_mes or j < n_mes:
         try:
-
             # for i in range(n_mes):
-            recv = pmu.recv_force()
+            recv = pmu.recv_force().message
+            print(recv)
             if recv.actuator_id == 1:
                 i += 1
-                print(f"got {i} msg {recv}")
             if recv.actuator_id == 0:
                 j += 1
-                print(f"got {j} msg {recv}")
             result.append(recv)
         except:
             continue

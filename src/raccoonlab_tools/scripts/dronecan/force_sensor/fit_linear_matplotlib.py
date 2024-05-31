@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # Prepare directory for plot images
 # os.makedirs("/figs", exist_ok=True)
-colors = ["b", "g", "r", "c", "m", "y", "k", "w"]
+colors = ["b", "g", "r", "c", "m", "y", "k", "w", "b", "g", "r", "c", "m", "y", "k", "w"]
 linestyles = ["-", "--"]
 linestyle_labels = ["forward", "reversed"]
 
@@ -41,16 +41,18 @@ def main():
             is_reverse = False
             results = glob.glob(test + "result.csv", recursive=True)
             samples = pd.read_csv(results[0]).to_dict(orient="records")
-            dist_from_pt = test.split("/")[-2]
+            dist_from_pt = test.split("/")[-2].replace("base_", "")
             dst = dist_from_pt
             if "reverse_" in dst:
                 is_reverse = True
                 dst = dst.replace("reverse_", "")
-            dst = float(dst)
+            try:
+                dst = float(dst)
+            except: continue
             samples_list[dist_from_pt] = []
             start_mes[dst] = 0
             end_mes[dst] = 0
-            make_normalized = True
+            make_normalized = False
 
             offset = 0
             max_sample = 1
@@ -94,9 +96,13 @@ def main():
         i = 0
         legend_patches = []
         distances = []
+        fig_big, ax_big = plt.subplots()
+
         for distance, samples in samples_list.items():
+            
             samples.sort(key=lambda sample: sample.y)
             dst = distance
+            is_reverse = False
             if "reverse_" in dst:
                 is_reverse = True
                 dst = dst.replace("reverse_", "")
@@ -113,71 +119,107 @@ def main():
                 legend_patches.append(mpatches.Patch(color=colors[j], label=dst))
             y = np.array([sample.y for sample in samples])
             # print(start_mes, distance)
-            split_y = y[
-                (y >= (start_mes[dst]["y"])) & (y <= (end_mes[dst]["y"]))
-            ]
+            # split_y = y[
+            #     (y >= (start_mes[dst]["y"])) & (y <= (end_mes[dst]["y"]))
+            # ]
 
 
-            res = np.array([sample.mean_adc1 for sample in samples])
-            split_res = res[
-                (res >= start_mes[dst]["adc"]) & (res <= end_mes[dst]["adc"])
-            ]
+            # res = np.array([sample.mean_adc1 for sample in samples])
+            # split_res = res[
+            #     (res >= start_mes[dst]["adc"]) & (res <= end_mes[dst]["adc"])
+            # ]
 
-            # Reshape the data
-            y_reshaped = split_y.reshape(-1, 1)
-            res_reshaped = split_res.reshape(-1, 1)
+            # # Reshape the data
+            # y_reshaped = split_y.reshape(-1, 1)
+            # res_reshaped = split_res.reshape(-1, 1)
             # Perform linear regression
-            model = LinearRegression().fit(y_reshaped, res_reshaped)
+            # model = LinearRegression().fit(y_reshaped, res_reshaped)
             # Get the slope and intercept of the fitted line
-            slope = model.coef_[0]
-            intercept = model.intercept_
+            # slope = model.coef_[0]
+            # intercept = model.intercept_
 
             fig, ax = plt.subplots()
-            pred = model.predict(
-                np.array([sample.y for sample in samples]).reshape(-1, 1)
-            )
-            ax.plot(
-                [sample.y for sample in samples],
-                pred,
-                color=colors[1],
-                linestyle="--",
-                label=f"slope {slope}",
-            )
+
+            # pred = model.predict(
+            #     np.array([sample.y for sample in samples]).reshape(-1, 1)
+            # )
+            # ax.plot(
+            #     [sample.y for sample in samples],
+            #     pred,
+            #     color=colors[1],
+            #     linestyle="--",
+            #     label=f"slope {slope}",
+            # )
             # Plot ADC1s as a line
             ax.plot(
                 [sample.y for sample in samples],
                 [(sample.mean_adc1) for sample in samples],
                 color=colors[2],
+                # label="ADC1"
             )
             # Plot ADC1s as a line
             ax.plot(
                 [sample.y for sample in samples],
                 [(sample.mean_adc2) for sample in samples],
                 color=colors[3],
+                # label="ADC2"
             )
-            alpha = 0.5
-            ax.axvline(
-                x=start_mes[distance]["y"],
-                label=distance,
-                color=colors[4],
-                alpha=alpha,
-            )
-            ax.axvline(
-                x=end_mes[distance]["y"],
-                label=distance,
-                color=colors[4],
-                alpha=alpha,
-            )
-            ax.set_title(f"slope:{slope}, offset:{intercept}")
+            # alpha = 0.5
+            # ax.axvline(
+            #     x=start_mes[distance]["y"],
+            #     label=distance,
+            #     color=colors[4],
+            #     alpha=alpha,
+            # )
+            # ax.axvline(
+            #     x=end_mes[distance]["y"],
+            #     label=distance,
+            #     color=colors[4],
+            #     alpha=alpha,
+            # )
+
+            # ax.set_title(f"slope:{slope}, offset:{intercept}")
+            legend_lines = [
+            mlines.Line2D([], [], color="black", linestyle=linestyle, label=label)
+            for linestyle, label in zip(linestyles, linestyle_labels)
+            ]
+            ax.legend(handles=legend_lines + legend_patches)
             print(f"{BASE_DIR}/model/plot_{base_test_name}{'_reversed_' if is_reverse else ''}{'(V)'}_{dst}.png")
+            ax.set_xlabel("Y (mm)")
+            ax.set_ylabel("ADC value")
+            fig.legend()
             fig.savefig(f"{BASE_DIR}/model/plot_{base_test_name}{'_reversed_' if is_reverse else ''}{'(V)'}_{dst}{'_normalized' if make_normalized else ''}.png")
             vlinestyle = f"{'-.' if is_reverse else ':'}"
             alpha = 0.5
             # print(distance)
             plt.close(fig)
 
-            print("Slope:", slope)
-            print("Intercept:", intercept)
+
+            # Plot ADC1s as a line
+            ax_big.plot(
+                [sample.y for sample in samples],
+                [(sample.mean_adc1) for sample in samples],
+                color=colors[j],
+                linestyle=f"{linestyles[1] if is_reverse else linestyles[0]}"
+                # label="ADC1"
+
+            )
+            # Plot ADC2s as a line
+            ax_big.plot(
+                [sample.y for sample in samples],
+                [(sample.mean_adc2) for sample in samples],
+                color=colors[j],
+                linestyle=f"{linestyles[1] if is_reverse else linestyles[0]}"
+                # label="ADC2"
+
+            )
+            # print("Slope:", slope)
+            # print("Intercept:", intercept)
+        ax_big.legend(handles=legend_lines + legend_patches)
+    
+        fig_big.legend()
+
+        fig_big.savefig(f"{BASE_DIR}/model/combined/plot_{base_test_name}{'_reversed_' if is_reverse else ''}{'(V)'}_{dst}{'_normalized' if make_normalized else ''}.png")
 
 
 if __name__ == "__main__":

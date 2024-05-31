@@ -56,7 +56,7 @@ class PMUNode:
         res = self.node.sub_once(
             dronecan.uavcan.equipment.actuator.Status, timeout_sec = timeout_sec
         )
-        return res.message
+        return res
 
     def configure(self, config):
         params = ParametersInterface()
@@ -107,22 +107,24 @@ class TestGateOk:
             
             # for i in range(n_mes):
                 recv = pmu.recv_force()
-                if recv.actuator_id == 1:
+                if recv.message.actuator_id == 1:
                     i +=1
-                    print(f"got {i} msg {recv}")
-                if recv.actuator_id == 0:
+                    print(f"got {i} msg {recv.message}")
+                if recv.message.actuator_id == 0:
                     j +=1
-                    print(f"got {j} msg {recv}")
+                    print(f"got {j} msg {recv.message}")
                 result.append(recv)
             except:
                 continue
         results = []
         for i, res in enumerate(result):
-            ptc = res.power_rating_pct
-            force = res.force
-            position = res.position
-            id = res.actuator_id
-            results.append({"ptc": ptc, "force": force, "position": position, "actuator_id": id, "timestamp": time.time()})
+            ptc = res.message.power_rating_pct
+            force = res.message.force
+            position = res.message.position
+            id = res.message.actuator_id
+            assert isinstance(res, dronecan.node.TransferEvent)
+
+            results.append({"ptc": ptc, "force": force, "position": position, "actuator_id": id, "timestamp": time.time(), "src_node_id": res.transfer.source_node_id})
         pd.DataFrame(results).to_csv(f"{save_dir}/{name}.csv", index=False)
 
 
@@ -131,7 +133,7 @@ class TestGateOk:
 
 def main():
     test = TestGateOk()
-    test.get_force_measurement(name="0.00", dir="tests_data/new_barrier/reverse_0.10_1")
+    test.get_force_measurement(name="0.0", dir="compare_barriers/reversed_gray_with_black_cover")
 #     cmd = ["pytest", os.path.abspath(__file__)]
 #     cmd += ["--tb=no"]  # No traceback at all
 #     cmd += ["-v"]  # Increase verbosity

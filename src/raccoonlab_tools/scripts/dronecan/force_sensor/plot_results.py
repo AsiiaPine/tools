@@ -10,8 +10,6 @@ import matplotlib.lines as mlines
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 
-# Prepare directory for plot images
-# os.makedirs("/figs", exist_ok=True)
 colors = ["b", "g", "r", "c", "m", "y", "k", "w"]
 linestyles = ["-", "--"]
 linestyle_labels = ["forward", "reversed"]
@@ -91,6 +89,7 @@ def plot_same_dst_from_pt_plane(
         [sample.y for sample in samples],
         [(sample.mean_adc2 - offset) * voltage_multiplier for sample in samples],
         color,
+        linestyle=linestyle,
         # label=labels[1],
         # color="blue",
     )
@@ -100,12 +99,12 @@ def plot_same_dst_from_pt_plane(
 
     # ax.set_title(f"Dst from PT plane: {dst} mm")
     ax.set_xlabel("Y (mm)")
-    ax.set_ylabel(f"ADC Voltage {'(V)' if not plot_raw_voltage else '(raw)'}")
+    ax.set_ylabel(f"ADC Signal {'(raw)' if plot_raw_voltage==0 else '(V)' if plot_raw_voltage==1  else ''}")
     ax.legend()
     # print(f"{BASE_DIR}/figs/plot_{test_name}_{dst}_{'(V)' if not plot_raw_voltage else '(raw)'}")
     if to_save:
         fig.savefig(
-            f"{BASE_DIR}/{folder}/{'voltage' if not plot_raw_voltage else 'raw'}/plot_{test_name}_{dst}_{'(V)' if not plot_raw_voltage else '(raw)'}.png"
+            f"{BASE_DIR}/{folder}/{'(raw)' if plot_raw_voltage==0 else '(V)' if plot_raw_voltage==1  else 'scaled'}/plot_{test_name}_{dst}_{'(V)' if not plot_raw_voltage else '(raw)'}.png"
         )
     # plt.close()
     return fig, ax
@@ -113,11 +112,9 @@ def plot_same_dst_from_pt_plane(
 
 def main():
     directory = os.path.dirname(os.path.realpath(__file__)) + "/tests_data"
-    # directory = os.path.join([directory, 'tests_data'])
     print(directory + "/tests_data/")
     directories = glob.glob(directory + "/*/", recursive=True)
     dist_from_pt = 0
-    # print(directories)
     for dir in directories:
         tests = glob.glob(dir + "/*/", recursive=True)
         base_test_name = dir.split("/")[-2]
@@ -130,9 +127,7 @@ def main():
         end_mes = {}
         for test in tests:
             try:
-                    
                 test_name = base_test_name + "_" + test.split("/")[-2]
-                # print(test_name)
                 is_reverse = False
                 results = glob.glob(test + "result.csv", recursive=True)
                 samples = pd.read_csv(results[0]).to_dict(orient="records")
@@ -180,6 +175,7 @@ def main():
                     
                 samples.sort(key=lambda sample: sample.y)
                 dst = distance
+                is_reverse = False
                 if "reverse" in dst:
                     is_reverse = True
                     dst = dst.replace("reversed_", "")
@@ -208,8 +204,8 @@ def main():
                     ax=ax,
                     to_save=False,
                     labels=[
-                        f"{'reverse' if is_reverse else ''} mes {dst}",
-                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                        f"{'reverse ' if is_reverse else ''}mes {dst}",
+                        f"{'reverse ' if is_reverse else ''}ref {dst}",
                     ],
                     linestyle=f"{'--' if is_reverse else '-'}",
                     color=colors[j],
@@ -223,8 +219,8 @@ def main():
                     ax=ax1,
                     to_save=False,
                     labels=[
-                        f"{'reverse' if is_reverse else ''} mes {dst}",
-                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                        f"{'reverse ' if is_reverse else ''}mes {dst}",
+                        f"{'reverse ' if is_reverse else ''}ref {dst}",
                     ],
                     linestyle=f"{'--' if is_reverse else '-'}",
                     color=colors[j],
@@ -239,89 +235,89 @@ def main():
                     ax=ax2,
                     to_save=False,
                     labels=[
-                        f"{'reverse' if is_reverse else ''} mes {dst}",
-                        f"{'reverse' if is_reverse else ''} ref {dst}",
+                        f"{'reverse ' if is_reverse else ''}mes {dst}",
+                        f"{'reverse ' if is_reverse else ''}ref {dst}",
                     ],
                     linestyle=f"{'--' if is_reverse else '-'}",
                     color=colors[j],
                     voltage_multiplier_val=max_sample,
                     offset=offset,
                 )
-                vlinestyle = f"{'-.' if is_reverse else ':'}"
-                alpha = 0.5
+                # vlinestyle = f"{'-.' if is_reverse else ':'}"
+                # alpha = 0.5
                 print(distance)
-                ax.axvline(
-                    x=start_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
-                ax.axvline(
-                    x=end_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
-                ax1.axvline(
-                    x=end_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
-                ax1.axvline(
-                    x=start_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
-                print(dst)
-                ax2.axvline(
-                    x=end_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
-                ax2.axvline(
-                    x=start_mes[distance],
-                    label=distance,
-                    color=colors[j],
-                    linestyle=vlinestyle,
-                    alpha=alpha,
-                )
+                # ax.axvline(
+                #     x=start_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
+                # ax.axvline(
+                #     x=end_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
+                # ax1.axvline(
+                #     x=end_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
+                # ax1.axvline(
+                #     x=start_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
+                # print(dst)
+                # ax2.axvline(
+                #     x=end_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
+                # ax2.axvline(
+                #     x=start_mes[distance],
+                #     label=distance,
+                #     color=colors[j],
+                #     linestyle=vlinestyle,
+                #     alpha=alpha,
+                # )
                 print(dst)
             except:
                 continue
-        # try:
-        # ax.set_title(f"Dst from PT plane: {dst} mm")
-        print("saving", base_test_name)
-        # ax.legend(handles=legend_patches)
-        legend_lines = [
-            mlines.Line2D([], [], color="black", linestyle=linestyle, label=label)
-            for linestyle, label in zip(linestyles, linestyle_labels)
-        ]
+        try:
+            # ax.set_title(f"Dst from PT plane: {dst} mm")
+            print("saving", base_test_name)
+            # ax.legend(handles=legend_patches)
+            legend_lines = [
+                mlines.Line2D([], [], color="black", linestyle=linestyle, label=label)
+                for linestyle, label in zip(linestyles, linestyle_labels)
+            ]
 
-        ax.legend(handles=legend_lines + legend_patches)
-        fig.savefig(
-            f"{BASE_DIR}/combined_figs/voltage/plot_{base_test_name}_{'(V)'}.png"
-        )
-        plt.close(fig)
+            ax.legend(handles=legend_lines + legend_patches)
+            fig.savefig(
+                f"{BASE_DIR}/combined_figs/voltage/plot_{base_test_name}_{'(V)'}.png"
+            )
+            plt.close(fig)
 
-        ax1.legend(handles=legend_lines + legend_patches)
-        # ax1.legend(handles=legend_patches)
-        fig1.savefig(
-            f"{BASE_DIR}/combined_figs/raw/plot_{base_test_name}_{'raw'}.png"
-        )
-        plt.close(fig1)
-        ax2.legend(handles=legend_lines + legend_patches)
-        # ax2.legend(handles=legend_patches)
-        fig2.savefig(f"{BASE_DIR}/combined_figs/scaled/plot_{base_test_name}.png")
-        plt.close(fig2)
-
+            ax1.legend(handles=legend_lines + legend_patches)
+            # ax1.legend(handles=legend_patches)
+            fig1.savefig(
+                f"{BASE_DIR}/combined_figs/raw/plot_{base_test_name}_{'raw'}.png"
+            )
+            plt.close(fig1)
+            ax2.legend(handles=legend_lines + legend_patches)
+            # ax2.legend(handles=legend_patches)
+            fig2.savefig(f"{BASE_DIR}/combined_figs/scaled/plot_{base_test_name}.png")
+            plt.close(fig2)
+        except: continue
 
 if __name__ == "__main__":
     main()
