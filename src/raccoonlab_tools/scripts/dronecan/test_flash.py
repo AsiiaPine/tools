@@ -25,7 +25,7 @@ PARAM_SYSTEM_NAME = "system.name"
 
 def generate_random_str():
     return ''.join([secrets.choice(string.ascii_uppercase +
-                    string.digits) for i in range(56)])
+                    string.digits) for i in range(55)]) + '\0'
 
 class Node:
     def __init__(self) -> None:
@@ -54,6 +54,7 @@ class Node:
             param_name = param_or_name.name
         value = generate_random_str()
         self.params_interface.set(Parameter(name=param_name, value=value))
+        self.node.node.spin(0.1)
         return value
 
     def set_random_int_param(self, param: Parameter) -> int:
@@ -102,8 +103,10 @@ class TestGetSet:
         if not node.str_params:
             return
         param = secrets.choice(node.str_params)
+        old_value = node.recv_parameter_value(param.name)
         value = node.set_random_str_param(param.name)
         res = str(node.recv_parameter_value(param.name)).replace("\x01", '')
+        print(f"value: {value}, res: {res}, old_value: {old_value}")
         assert res == value
 
     @staticmethod
