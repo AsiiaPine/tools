@@ -2,7 +2,7 @@
 # This software is distributed under the terms of the MIT License.
 # Copyright (c) 2024 Dmitry Ponomarev.
 # Author: Dmitry Ponomarev <ponomarevda96@gmail.com>
-from typing import Optional
+from typing import List, Optional
 from dataclasses import dataclass
 import serial.tools.list_ports
 import netifaces
@@ -67,6 +67,18 @@ class DeviceManager:
         if len(devices) == 0:
             raise TransportNotFoundException("[ERROR] CAN-transport has not been detected.")
         return devices[0].port
+
+    @staticmethod
+    def get_device_ports() -> List[str]:
+        """
+        Find device ports and return the best one.
+        Raise an exeption if it doesn't exist.
+        Return examples: ["/dev/ttyACM0", "COM16", "slcan0"]
+        """
+        devices = DeviceManager.find_transports()
+        if len(devices) == 0:
+            raise TransportNotFoundException("[ERROR] CAN-transport has not been detected.")
+        return [device.port for device in devices]
 
     @staticmethod
     def get_cyphal_can_iface() -> str:

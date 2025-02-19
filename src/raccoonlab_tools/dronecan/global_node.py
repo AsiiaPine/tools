@@ -13,19 +13,25 @@ class DronecanNode:
     node = None
     def __init__(self, node_id: int = 100) -> None:
         if DronecanNode.node is None:
-            transport = DeviceManager.get_device_port()
-            if transport.startswith(("slcan", "can")):
-                dronecan_transport = f'{transport}'
-            elif transport.startswith("/dev/") or transport.startswith("COM"):
-                dronecan_transport = f'slcan:{transport}'
-            else:
-                print(f"Unsupported interface {transport}")
-                sys.exit(1)
-
-            DronecanNode.node = dronecan.make_node(dronecan_transport,
-                                                   node_id=node_id,
-                                                   bitrate=1000000,
-                                                   baudrate=1000000)
+            transports = DeviceManager.get_device_ports()
+            for transport in transports:
+                if transport.startswith(("slcan", "can")):
+                    dronecan_transport = f'{transport}'
+                elif transport.startswith("/dev/") or transport.startswith("COM"):
+                    dronecan_transport = f'slcan:{transport}'
+                else:
+                    print(f"Unsupported interface {transport}")
+                    continue
+                try:
+                    DronecanNode.node = dronecan.make_node(dronecan_transport,
+                                                        node_id=node_id,
+                                                        bitrate=1000000,
+                                                        baudrate=1000000)
+                    break
+                except:
+                    continue
+            if DronecanNode.node is None:
+                raise Exception("No suitable transport found")
         self.msg = None
 
     def sub_once(self,
